@@ -1,53 +1,106 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Income Statement Totals</title>
-<script src="/js/tailwind.js"></script>
-</head>
-<body class="bg-gray-50 font-sans py-10">
-  <div class="max-w-3xl mx-auto bg-white shadow-md rounded-xl p-6">
-    <h2 class="text-2xl font-semibold text-center text-gray-800 mb-6">
-      Income Statement Totals
-    </h2>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Income Statement Totals</title>
+    <script src="/js/tailwind.js"></script>
+  </head>
+  <body class="bg-gray-50 font-sans py-10">
+    <div class="max-w-4xl mx-auto bg-white shadow-md rounded-xl p-6">
+      <h2 class="text-2xl font-semibold text-center text-gray-800 mb-6">
+        Income Statement Totals
+      </h2>
 
-    <div class="overflow-x-auto">
-      <table class="min-w-full border border-gray-300 rounded-lg">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="px-4 py-2 text-left text-gray-700 font-bold"> </th>
-            <th class="px-4 py-2 text-right text-gray-700 font-bold pe-12">TMT</th>
-            <th class="px-4 py-2 text-right text-gray-700 font-bold pe-12">USD</th>
-          </tr>
-        </thead>
+      <div class="overflow-x-auto">
+        <table class="min-w-full border border-gray-300 rounded-lg">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="px-4 py-2 text-left text-gray-700 font-bold"></th>
+              <th class="px-4 py-2 text-right text-gray-700 font-bold pe-12">
+                TMT
+              </th>
+              <th class="px-4 py-2 text-right text-gray-700 font-bold pe-12">
+                USD
+              </th>
+            </tr>
+          </thead>
 
-        <tbody class="divide-y divide-gray-200">
-            <!-- Group Header -->
+          <tbody class="divide-y divide-gray-200">
+            <!-- Revenue Group -->
             <tr class="bg-blue-50 font-semibold">
-            <td class="px-4 py-2 text-gray-800 text-xl font-semibold">Girdeji</td>
-            <td class="px-4 py-2 text-right text-gray-800">
-                <%= totalTMT.toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
-            </td>
-            <td class="px-4 py-2 text-right text-gray-800">
-                <%= totalUSD.toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
-            </td>
+              <td class="px-4 py-2 text-gray-800 text-xl font-semibold">
+                Girdeji
+              </td>
+              <td class="px-4 py-2 text-right text-gray-800">
+                <%= totals.totalRevenueTMT.toLocaleString('en-US', {
+                maximumFractionDigits: 2 }) %>
+              </td>
+              <td class="px-4 py-2 text-right text-gray-800">
+                <%= totals.totalRevenueUSD.toLocaleString('en-US', {
+                maximumFractionDigits: 2 }) %>
+              </td>
             </tr>
 
-            <!-- Loop through items -->
-            <% provicedServices.forEach(item => { %>
+            <% totals.revenue.forEach(item => { %>
             <tr class="hover:bg-gray-50">
-                <td class="px-6 py-2 text-gray-700"><%= item.NAME %></td>
-                <td class="px-4 py-2 text-right text-gray-700">
-                <%= item.LINENET.toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
-                </td>
-                <td class="px-4 py-2 text-right text-gray-700">
-                <%= item.REPORTNET.toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
-                </td>
+              <td class="px-6 py-2 text-gray-700"><%= item.NAME %></td>
+              <td class="px-4 py-2 text-right text-gray-700">
+                <%= item.LINENET.toLocaleString('en-US', {
+                maximumFractionDigits: 2 }) %>
+              </td>
+              <td class="px-4 py-2 text-right text-gray-700">
+                <%= item.REPORTNET.toLocaleString('en-US', {
+                maximumFractionDigits: 2 }) %>
+              </td>
             </tr>
             <% }) %>
-        </tbody>
-      </table>
+
+            <!-- Expense Group -->
+            <tr class="bg-red-50 font-semibold">
+              <td class="px-4 py-2 text-gray-800 text-xl font-semibold">
+                Cykdajy
+              </td>
+              <td class="px-4 py-2 text-right text-gray-800">
+                <%= totals.totalExpenseTMT.toLocaleString('en-US', {
+                maximumFractionDigits: 2 }) %>
+              </td>
+              <td class="px-4 py-2 text-right text-gray-800">
+                <%= totals.totalExpenseUSD.toLocaleString('en-US', {
+                maximumFractionDigits: 2 }) %>
+              </td>
+            </tr>
+
+            <% totals.expense.forEach(item => { %>
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-2 text-gray-700"><%= item.NAME %></td>
+              <td class="px-4 py-2 text-right text-gray-700">
+                <%= item.LINENET.toLocaleString('en-US', {
+                maximumFractionDigits: 2 }) %>
+              </td>
+              <td class="px-4 py-2 text-right text-gray-700">
+                <%= item.REPORTNET.toLocaleString('en-US', {
+                maximumFractionDigits: 2 }) %>
+              </td>
+            </tr>
+            <% }) %>
+
+            <!-- Profit Group -->
+            <tr class="bg-green-100 font-semibold">
+              <td class="px-4 py-2 text-gray-800 text-xl font-semibold">
+                Peyda
+              </td>
+              <td class="px-4 py-2 text-right text-gray-800">
+                <%= totals.totalProfitTMT.toLocaleString('en-US', {
+                maximumFractionDigits: 2 }) %>
+              </td>
+              <td class="px-4 py-2 text-right text-gray-800">
+                <%= totals.totalProfitUSD.toLocaleString('en-US', {
+                maximumFractionDigits: 2 }) %>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
-</body>
+  </body>
 </html>
