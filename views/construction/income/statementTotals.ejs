@@ -4,12 +4,43 @@
     <meta charset="UTF-8" />
     <title>Income Statement Totals</title>
     <script src="/js/tailwind.js"></script>
+    <script src="/construction/js/income/statementTotals.js"></script>
   </head>
   <body class="bg-gray-50 font-sans py-10">
     <div class="max-w-4xl mx-auto bg-white shadow-md rounded-xl p-6">
-      <h2 class="text-2xl font-semibold text-center text-gray-800 mb-6">
-        Income Statement Totals
-      </h2>
+      <div class="flex justify-between">
+        <h2 class="text-2xl font-semibold text-center text-gray-800 mb-6 pl-6">
+          Peyda / Zyyan Hasabaty
+        </h2>
+        
+        <div class="relative inline-block w-auto">
+          <select
+            id="clientNames"
+            class="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            onchange="handleClientNames(event)"
+          >
+            <% totals.clientNames.forEach((item, index) => { %>
+            <option value="<%= item.CODE %>" 
+              <%= clientCode == item.CODE ? 'selected' : '' %>>
+              <%= item.DEFINITION_ %>
+            </option>
+            <% })%>
+          </select>
+          <div
+            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700"
+          >
+            <svg
+              class="fill-current h-12 w-12"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="-10 -2 10 40"
+            >
+              <path
+                d="M9.293 12.95l.707.707L15 9.707l-1.414-1.414L10 12.086 6.414 8.5l-1.414 1.414 4.293 4.293z"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
 
       <div class="overflow-x-auto">
         <table class="min-w-full border border-gray-300 rounded-lg">
@@ -27,7 +58,7 @@
 
           <tbody class="divide-y divide-gray-200">
             <!-- Revenue Group -->
-            <tr class="bg-blue-50 font-semibold">
+            <tr class="bg-blue-50 font-semibold cursor-pointer">
               <td class="px-4 py-2 text-gray-800 text-xl font-semibold">
                 Girdeji
               </td>
@@ -40,9 +71,12 @@
                 maximumFractionDigits: 2 }) %>
               </td>
             </tr>
-
+            
             <% totals.revenue.forEach(item => { %>
-            <tr class="hover:bg-gray-50">
+            <tr
+              class="hover:bg-gray-50 cursor-pointer"
+              onclick="window.location.href='/construction/income/revenue-details?category=<%= encodeURIComponent(item.NAME) %>&clientCode=<%= clientCode %>'"
+            >
               <td class="px-6 py-2 text-gray-700"><%= item.NAME %></td>
               <td class="px-4 py-2 text-right text-gray-700">
                 <%= item.LINENET.toLocaleString('en-US', {
@@ -56,7 +90,7 @@
             <% }) %>
 
             <!-- Expense Group -->
-            <tr class="bg-red-50 font-semibold">
+            <tr class="bg-red-50 font-semibold cursor-pointer">
               <td class="px-4 py-2 text-gray-800 text-xl font-semibold">
                 Cykdajy
               </td>
@@ -71,7 +105,10 @@
             </tr>
 
             <% totals.expense.forEach(item => { %>
-            <tr class="hover:bg-gray-50">
+            <tr
+              class="hover:bg-gray-50 cursor-pointer"
+              onclick="window.location.href='/construction/income/expense-details?category=<%= encodeURIComponent(item.NAME) %>&clientCode=<%= clientCode || '120.05.001' %>'"
+            >
               <td class="px-6 py-2 text-gray-700"><%= item.NAME %></td>
               <td class="px-4 py-2 text-right text-gray-700">
                 <%= item.LINENET.toLocaleString('en-US', {

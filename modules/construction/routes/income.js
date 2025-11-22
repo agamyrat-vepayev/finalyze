@@ -1,8 +1,14 @@
-import express from 'express'
-import { showTotals } from '../controller/income.js'
+import express from "express";
+import {
+  showStatementTotals,
+  showRevenueDetails,
+  showExpenseDetails,
+} from "../controller/income.js";
 
-const router = express.Router()
+const router = express.Router();
 
-router.get('/totals', showTotals)
+router.get("/totals", showStatementTotals);
+router.get("/revenue-details", showRevenueDetails);
+router.get("/expense-details", showExpenseDetails);
 
-export default router
+export default router;

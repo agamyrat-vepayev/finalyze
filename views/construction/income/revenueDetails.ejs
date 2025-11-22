@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Revenue Details - <%= category %></title>
+    <script src="/js/tailwind.js"></script>
+  </head>
+  <body class="bg-gray-50 font-sans py-10">
+    <div class="max-w-6xl mx-auto bg-white shadow-md rounded-xl p-6">
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-semibold text-gray-800">
+          Revenue Details - <%= category %>
+        </h2>
+        <a href="/construction/income/totals" class="text-blue-600 underline"
+          >← Back to Totals</a
+        >
+      </div>
+
+      ```
+      <!-- Table -->
+      <div class="overflow-x-auto rounded-lg border border-gray-300">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="px-4 py-2 text-left text-gray-700 font-medium">
+                Name
+              </th>
+              <th class="px-4 py-2 text-left text-gray-700 font-medium">
+                Date
+              </th>
+              <th class="px-4 py-2 text-left text-gray-700 font-medium">
+                Definition
+              </th>
+              <th class="px-4 py-2 text-left text-gray-700 font-medium">
+                Specode
+              </th>
+              <th class="px-4 py-2 text-left text-gray-700 font-medium">
+                Line Explanation
+              </th>
+              <th class="px-4 py-2 text-right text-gray-700 font-medium">
+                TMT
+              </th>
+              <th class="px-4 py-2 text-right text-gray-700 font-medium">
+                USD
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 bg-white">
+            <% revenueDetails.forEach(item => { %>
+            <tr class="hover:bg-gray-50 cursor-pointer">
+              <td class="px-4 py-2"><%= item.NAME %></td>
+              <td class="px-4 py-2">
+                <%= new
+                Date(item.DATE_).toLocaleDateString('en-GB').replace(/\//g, '.')
+                %>
+              </td>
+              <td class="px-4 py-2"><%= item.DEFINITION_ %></td>
+              <td class="px-4 py-2"><%= item.SPECODE %></td>
+              <td class="px-4 py-2"><%= item.LINEEXP %></td>
+              <td class="px-4 py-2 text-right">
+                <%= item.LINENET.toLocaleString('en-US', {
+                maximumFractionDigits: 2 }) %>
+              </td>
+              <td class="px-4 py-2 text-right">
+                <%= item.REPORTNET.toLocaleString('en-US', {
+                maximumFractionDigits: 2 }) %>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div
+        class="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between"
+      >
+        <div class="text-gray-600 mb-2 sm:mb-0">
+          Showing <%= (currentPage - 1) * 50 + 1 %> to <%= Math.min(currentPage
+          * 50, totalItems) %> of <%= totalItems %> items
+        </div>
+        <div class="flex space-x-1">
+          <!-- Previous Button -->
+          <% if(currentPage > 1) { %>
+          <a
+            href="?<%= category ? 'category=' + encodeURIComponent(category) + '&' : '' %>page=<%= currentPage - 1 %>"
+            class="px-3 py-1 border rounded-md bg-white text-blue-500 hover:bg-blue-50"
+            >Prev</a
+          >
+          <% } else { %>
+          <span
+            class="px-3 py-1 border rounded-md bg-gray-200 text-gray-400 cursor-not-allowed"
+            >Prev</span
+          >
+          <% } %>
+
+          <!-- Page Numbers -->
+          <% let startPage = Math.max(1, currentPage - 2); let endPage =
+          Math.min(totalPages, currentPage + 2); %> <% if(startPage > 1) { %>
+          <a
+            href="?<%= category ? 'category=' + encodeURIComponent(category) + '&' : '' %>page=1"
+            class="px-3 py-1 border rounded-md bg-white text-blue-500 hover:bg-blue-50"
+            >1</a
+          >
+          <% if(startPage > 2) { %>
+          <span class="px-2 text-gray-500">...</span>
+          <% } %> <% } %> <% for(let i = startPage; i <= endPage; i++) { %>
+          <a
+            href="?<%= category ? 'category=' + encodeURIComponent(category) + '&' : '' %>page=<%= i %>"
+            class="px-3 py-1 border rounded-md <%= i === currentPage ? 'bg-blue-500 text-white' : 'bg-white text-blue-500 hover:bg-blue-50' %>"
+            ><%= i %></a
+          >
+          <% } %> <% if(endPage < totalPages) { %> <% if(endPage < totalPages -
+          1) { %>
+          <span class="px-2 text-gray-500">...</span>
+          <% } %>
+          <a
+            href="?<%= category ? 'category=' + encodeURIComponent(category) + '&' : '' %>page=<%= totalPages %>"
+            class="px-3 py-1 border rounded-md bg-white text-blue-500 hover:bg-blue-50"
+            ><%= totalPages %></a
+          >
+          <% } %>
+
+          <!-- Next Button -->
+          <% if(currentPage < totalPages) { %>
+          <a
+            href="?<%= category ? 'category=' + encodeURIComponent(category) + '&' : '' %>page=<%= currentPage + 1 %>"
+            class="px-3 py-1 border rounded-md bg-white text-blue-500 hover:bg-blue-50"
+            >Next</a
+          >
+          <% } else { %>
+          <span
+            class="px-3 py-1 border rounded-md bg-gray-200 text-gray-400 cursor-not-allowed"
+            >Next</span
+          >
+          <% } %>
+        </div>
+      </div>
+      ```
+    </div>
+  </body>
+</html>
