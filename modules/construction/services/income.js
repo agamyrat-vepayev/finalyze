@@ -6,8 +6,25 @@ import {
   fetchExpenseDetails,
 } from "../repositories/income.js";
 
-export async function getStatementTotals(clientCode) {
-  const revenue = await fetchRevenueTotals(clientCode);
+export async function getStatementTotals(
+  clientCode,
+  month,
+  year,
+  startDate,
+  endDate
+) {
+  const months = month ? month.split(",") : [];
+  const years = year ? year.split(",") : [];
+
+  const { allClients, selectedClient } = await fetchClientNames(clientCode);
+
+  const revenue = await fetchRevenueTotals(
+    clientCode,
+    months,
+    years,
+    startDate,
+    endDate
+  );
   const totalRevenueTMT = revenue.reduce(
     (sum, row) => sum + (row.LINENET || 0),
     0
@@ -17,7 +34,13 @@ export async function getStatementTotals(clientCode) {
     0
   );
 
-  const expense = await fetchExpenseTotals(clientCode);
+  const expense = await fetchExpenseTotals(
+    clientCode,
+    months,
+    years,
+    startDate,
+    endDate
+  );
   const totalExpenseTMT = expense.reduce(
     (sum, row) => sum + (row.LINENET || 0),
     0
@@ -30,9 +53,9 @@ export async function getStatementTotals(clientCode) {
   const totalProfitTMT = totalRevenueTMT - totalExpenseTMT;
   const totalProfitUSD = totalRevenueUSD - totalExpenseUSD;
 
-  const clientNames = await fetchClientNames();
-
   return {
+    allClients,
+    selectedClient,
     revenue,
     totalRevenueTMT,
     totalRevenueUSD,
@@ -41,7 +64,6 @@ export async function getStatementTotals(clientCode) {
     totalExpenseUSD,
     totalProfitTMT,
     totalProfitUSD,
-    clientNames,
   };
 }
 
@@ -60,13 +82,18 @@ export async function getRevenueDetails(
     pageSize
   );
 
-  const totalPages = Math.ceil(totalRows / pageSize);
+  const totalPages = totalRows > 0 ? Math.ceil(totalRows / pageSize) : 1;
+
+  const { allClients, selectedClient } = await fetchClientNames(clientCode);
+  const clientName = selectedClient ? selectedClient.DEFINITION_ : clientCode;
 
   return {
     data: results,
     totalItems: totalRows,
     totalPages,
     currentPage: page,
+    clientName,
+    allClients,
   };
 }
 
@@ -87,10 +114,15 @@ export async function getExpenseDetails(
 
   const totalPages = totalRows > 0 ? Math.ceil(totalRows / pageSize) : 1;
 
+  const { allClients, selectedClient } = await fetchClientNames(clientCode);
+  const clientName = selectedClient ? selectedClient.DEFINITION_ : clientCode;
+
   return {
     data: results,
     totalItems: totalRows,
     totalPages,
     currentPage: page,
+    clientName,
+    allClients,
   };
 }

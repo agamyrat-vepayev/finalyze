@@ -7,10 +7,28 @@ import {
 export async function showStatementTotals(req, res) {
   try {
     const clientCode = req.query.clientCode || "120.05.001";
-    const totals = await getStatementTotals(clientCode);
+    const filterMonth = req.query.month || "";
+    const filterYear = req.query.year || "";
+
+    const startDate = req.query.startDate || "";
+    const endDate = req.query.endDate || "";
+
+    const totals = await getStatementTotals(
+      clientCode,
+      filterMonth,
+      filterYear,
+      startDate,
+      endDate
+    );
+
     res.render("construction/income/statementTotals", {
       totals,
       clientCode,
+      clientName: totals.selectedClient?.DEFINITION_ || "",
+      filterMonth,
+      filterYear,
+      startDate,
+      endDate,
     });
   } catch (error) {
     console.error("Error rendering totals:", error);
@@ -30,10 +48,13 @@ export async function showRevenueDetails(req, res) {
       pageNumber,
       pageSize
     );
+
     res.render("construction/income/revenueDetails", {
       revenueDetails: result.data,
       category,
       clientCode,
+      clientName: result.clientName,
+      allClients: result.allClients,
       currentPage: result.currentPage,
       totalItems: result.totalItems,
       totalPages: result.totalPages,
@@ -61,6 +82,7 @@ export async function showExpenseDetails(req, res) {
       expenseDetails: result.data,
       category,
       clientCode,
+      clientName: result.clientName,
       currentPage: result.currentPage,
       totalItems: result.totalItems,
       totalPages: result.totalPages,

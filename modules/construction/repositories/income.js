@@ -1,7 +1,8 @@
 import { Sequelize, SequelizeScopeError } from "sequelize";
 import sequelize from "../../../config/database.js";
+import { dateFilter } from "../utils/income.js";
 
-export async function fetchClientNames() {
+export async function fetchClientNames(selectedCode) {
   try {
     const query = `
 
@@ -18,15 +19,34 @@ export async function fetchClientNames() {
         `;
 
     const [results] = await sequelize.query(query);
-    return results;
+    const selectedClient = results.find((c) => c.CODE === selectedCode) || null;
+
+    return {
+      allClients: results,
+      selectedClient,
+    };
   } catch (error) {
     console.error("Error fetching provided service totals:", error);
     throw error;
   }
 }
 
-export async function fetchRevenueTotals(clientCode) {
+export async function fetchRevenueTotals(
+  clientCode,
+  months = [],
+  years = [],
+  startDate,
+  endDate
+) {
   try {
+    const dateFilters = dateFilter({
+      months,
+      years,
+      startDate,
+      endDate,
+      columnName: "STL.DATE_",
+    });
+
     const query = `
 
             SELECT 
@@ -43,11 +63,12 @@ export async function fetchRevenueTotals(clientCode) {
                 LEFT JOIN LG_100_SRVCARD SVC ON STL.STOCKREF = SVC.LOGICALREF
                 LEFT JOIN LG_100_CLCARD CLC ON STL.CLIENTREF = CLC.LOGICALREF
                 LEFT JOIN LG_100_CLCARD CSV ON STL.SPECODE = CSV.CODE
-
+                
                 WHERE STL.TRCODE = 9
                     AND ISNULL(CLC.CODE, CSV.CODE) = '${
                       clientCode || "120.05.001"
                     }'
+                    ${dateFilters}
                 
                 GROUP BY CASE 
                             WHEN SVC.LOGICALREF IN (29,31,32) THEN 'Edilen is F2'
@@ -64,8 +85,22 @@ export async function fetchRevenueTotals(clientCode) {
   }
 }
 
-export async function fetchExpenseTotals(clientCode) {
+export async function fetchExpenseTotals(
+  clientCode,
+  months = [],
+  years = [],
+  startDate,
+  endDate
+) {
   try {
+    const dateFilters = dateFilter({
+      months,
+      years,
+      startDate,
+      endDate,
+      columnName: "CFL.DATE_",
+    });
+
     const query = `
             SELECT 
 
@@ -105,7 +140,6 @@ export async function fetchExpenseTotals(clientCode) {
                                 END *(-1)
                     END) [REPORTNET]
 
-
                 FROM LG_100_CLCARD CLC
                 INNER JOIN LG_100_01_CLFLINE CFL ON CLC.LOGICALREF = CFL.CLIENTREF
                 LEFT JOIN LG_100_01_INVOICE INV ON CFL.SOURCEFREF = INV.LOGICALREF 
@@ -122,7 +156,7 @@ export async function fetchExpenseTotals(clientCode) {
                             ) RN,
                             STOCKREF,
                             IIF(OUTCOST=0,PRICE,OUTCOST) OUTCOST
-                    
+
                             FROM LG_100_01_STLINE STL
 
                             WHERE IIF(OUTCOST=0,PRICE,OUTCOST) <> 0
@@ -131,6 +165,7 @@ export async function fetchExpenseTotals(clientCode) {
 
                 WHERE CLC.ADDR2 = '${clientCode || "120.05.001"}'
                         AND CFL.CANCELLED = 0
+                        ${dateFilters}
 
                 GROUP BY CLC.ADDR1,
                         CLC.ADDR2
@@ -165,13 +200,12 @@ export async function fetchRevenueDetails(category, clientCode, offset, limit) {
                             WHEN SVC.LOGICALREF = 67 THEN 'Konwertasiya'
                             ELSE 'Beylekiler'
                         END = '${category}'
-                    
     `;
 
     const [countResult] = await sequelize.query(countQuery);
     const totalRows = countResult[0].totalRows;
 
-    const query = `
+    const detailQuery = `
             SELECT 
                 CASE 
                     WHEN SVC.LOGICALREF IN (29,31,32) THEN 'Edilen is F2'
@@ -203,8 +237,8 @@ export async function fetchRevenueDetails(category, clientCode, offset, limit) {
                 FETCH NEXT ${limit} ROWS ONLY;
         `;
 
-    const [results] = await sequelize.query(query);
-    return { totalRows, results };
+    const [results] = await sequelize.query(detailQuery);
+    return { results, totalRows };
   } catch (error) {
     console.error("Error fetching provided service totals:", error);
     throw error;
@@ -214,18 +248,21 @@ export async function fetchRevenueDetails(category, clientCode, offset, limit) {
 export async function fetchExpenseDetails(category, clientCode, offset, limit) {
   try {
     const countQuery = `
-      SELECT COUNT(*) AS totalRows
-      FROM LG_100_CLCARD CLC
-      INNER JOIN LG_100_01_CLFLINE CFL ON CLC.LOGICALREF = CFL.CLIENTREF
-      WHERE LEFT(CLC.CODE, 6) = '170.22'
-            AND CFL.CANCELLED = 0
-            AND CLC.ADDR1 = '${category}'
-            AND CLC.ADDR2 = '${clientCode}'
+            SELECT 
+                COUNT(*) totalRows
+            
+                FROM LG_100_CLCARD CLC
+                INNER JOIN LG_100_01_CLFLINE CFL ON CLC.LOGICALREF = CFL.CLIENTREF
+
+                WHERE LEFT(CLC.CODE, 6) = '170.22'
+                    AND CFL.CANCELLED = 0
+                    AND CLC.ADDR1 = '${category}'
+                    AND CLC.ADDR2 = '${clientCode}'
     `;
     const [countResult] = await sequelize.query(countQuery);
     const totalRows = countResult[0].totalRows;
 
-    const dataQuery = `
+    const detailQuery = `
             SELECT 
                 
                 CLC.ADDR1 NAME,
@@ -319,7 +356,7 @@ export async function fetchExpenseDetails(category, clientCode, offset, limit) {
                 FETCH NEXT ${limit} ROWS ONLY;
 
         `;
-    const [results] = await sequelize.query(dataQuery);
+    const [results] = await sequelize.query(detailQuery);
     return { results, totalRows };
   } catch (error) {
     console.error("Error fetching provided service totals:", error);

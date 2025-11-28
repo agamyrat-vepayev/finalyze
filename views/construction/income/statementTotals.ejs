@@ -1,143 +1,311 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Income Statement Totals</title>
-    <script src="/js/tailwind.js"></script>
-    <script src="/construction/js/income/statementTotals.js"></script>
-  </head>
-  <body class="bg-gray-50 font-sans py-10">
-    <div class="max-w-4xl mx-auto bg-white shadow-md rounded-xl p-6">
-      <div class="flex justify-between">
-        <h2 class="text-2xl font-semibold text-center text-gray-800 mb-6 pl-6">
-          Peyda / Zyyan Hasabaty
-        </h2>
-        
-        <div class="relative inline-block w-auto">
-          <select
-            id="clientNames"
-            class="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            onchange="handleClientNames(event)"
-          >
-            <% totals.clientNames.forEach((item, index) => { %>
-            <option value="<%= item.CODE %>" 
-              <%= clientCode == item.CODE ? 'selected' : '' %>>
-              <%= item.DEFINITION_ %>
-            </option>
-            <% })%>
-          </select>
-          <div
-            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700"
-          >
-            <svg
-              class="fill-current h-12 w-12"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="-10 -2 10 40"
-            >
-              <path
-                d="M9.293 12.95l.707.707L15 9.707l-1.414-1.414L10 12.086 6.414 8.5l-1.414 1.414 4.293 4.293z"
-              />
-            </svg>
+<head>
+  <meta charset="UTF-8">
+  <title>Income Statement Totals</title>
+  <script src="/js/tailwind.js"></script>
+  <style>
+    .multi-select-dropdown {
+      position: relative;
+      cursor: pointer;
+      user-select: none;
+    }
+    .multi-select-dropdown-content {
+      position: absolute;
+      z-index: 10;
+      background: white;
+      border: 1px solid #d1d5db; /* gray-300 */
+      border-radius: 0.5rem;
+      width: 100%;
+      max-height: 12rem;
+      overflow-y: auto;
+      display: none;
+      padding: 0.25rem 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .multi-select-dropdown.open .multi-select-dropdown-content {
+      display: block;
+    }
+    .multi-select-dropdown label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.25rem 1rem;
+      cursor: pointer;
+    }
+    .multi-select-dropdown label:hover {
+      background-color: #f3f4f6; /* gray-100 */
+    }
+    .multi-select-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      background-color: white;
+    }
+    .checkmark {
+      font-size: 0.9rem;
+      color: #2563eb; /* blue-600 */
+    }
+  </style>
+  <script>
+    function toggleDropdown(id) {
+      document.getElementById(id).classList.toggle('open');
+    }
+
+    function toggleOption(dropdownId, value, event) {
+      event.stopPropagation(); // prevent dropdown from closing immediately
+      const input = document.getElementById(dropdownId + '-values');
+      let selected = JSON.parse(input.value || '[]');
+      const isSelected = selected.includes(value);
+
+      if (event.ctrlKey || event.metaKey) {
+        // Ctrl/Cmd allows multiple selection
+        if (isSelected) selected = selected.filter(v => v !== value);
+        else selected.push(value);
+      } else {
+        // No Ctrl/Cmd → select only this one
+        selected = isSelected ? [] : [value];
+      }
+
+      input.value = JSON.stringify(selected);
+      renderDropdownLabel(dropdownId);
+
+      // Close dropdown if not Ctrl/Cmd
+      if (!(event.ctrlKey || event.metaKey)) {
+        document.getElementById(dropdownId).classList.remove('open');
+      }
+    }
+
+    function renderDropdownLabel(dropdownId) {
+      const container = document.getElementById(dropdownId + '-label-text');
+      const selected = JSON.parse(document.getElementById(dropdownId + '-values').value || '[]');
+
+      container.textContent = selected.length === 0
+        ? dropdownId === 'filterMonth' ? 'Select months...' : 'Select years...'
+        : selected.join(',');
+
+      // update checkmarks
+      const items = document.querySelectorAll(`#${dropdownId} .multi-select-dropdown-content label`);
+      items.forEach(label => {
+        const val = label.getAttribute('data-value');
+        label.querySelector('.checkmark').textContent = selected.includes(val) ? '✓' : '';
+      });
+    }
+
+    function handleFilters() {
+      const clientCode = document.getElementById("clientSelect").value;
+      let months = JSON.parse(document.getElementById('filterMonth-values').value || '[]').join(',');
+      let years = JSON.parse(document.getElementById('filterYear-values').value || '[]').join(',');
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+
+      // If start/end dates are selected, ignore month/year
+      if (startDate || endDate) {
+        months = '';
+        years = '';
+        clearDropdownLabels(['filterMonth','filterYear']);
+      }
+
+      let url = `/construction/income/totals?clientCode=${clientCode}&month=${months}&year=${years}`;
+      if (startDate) url += `&startDate=${startDate}`;
+      if (endDate) url += `&endDate=${endDate}`;
+
+      window.location.href = url;
+    }
+
+    function clearDropdownLabels(ids) {
+      ids.forEach(id => {
+        document.getElementById(id + '-values').value = '[]';
+        renderDropdownLabel(id);
+      });
+    }
+
+    function clearFilter(dropdownId) {
+      // Clear dropdown
+      document.getElementById(dropdownId + '-values').value = '[]';
+      renderDropdownLabel(dropdownId);
+
+      // Trigger filter update immediately
+      const clientCode = document.getElementById("clientSelect").value;
+      const months = JSON.parse(document.getElementById('filterMonth-values').value || '[]').join(',');
+      const years = JSON.parse(document.getElementById('filterYear-values').value || '[]').join(',');
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+
+      let url = `/construction/income/totals?clientCode=${clientCode}&month=${months}&year=${years}`;
+      if (startDate) url += `&startDate=${startDate}`;
+      if (endDate) url += `&endDate=${endDate}`;
+
+      window.location.href = url;
+    }
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+      ['filterMonth','filterYear'].forEach(id => {
+        const dropdown = document.getElementById(id);
+        if (!dropdown.contains(e.target)) dropdown.classList.remove('open');
+      });
+    });
+  </script>
+</head>
+<body class="bg-gray-50 font-sans py-10">
+<div class="max-w-7xl mx-auto flex gap-6">
+
+  <!-- Main Table -->
+  <div class="flex-1 bg-white shadow-md rounded-xl p-6 overflow-x-auto">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-2 text-center"><%= clientName || "" %></h2>
+    <h3 class="text-xl text-center mb-3">Peyda / Zyyan Hasabaty</h3>
+    <table class="min-w-full border border-gray-300 rounded-lg">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="px-4 py-2 text-left text-gray-700 font-bold"></th>
+          <th class="px-4 py-2 text-right text-gray-700 font-bold pe-12">TMT</th>
+          <th class="px-4 py-2 text-right text-gray-700 font-bold pe-12">USD</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200">
+        <!-- Revenue -->
+        <tr class="bg-blue-50 font-semibold cursor-pointer">
+          <td class="px-4 py-2 text-gray-800 text-xl font-semibold">Girdeji</td>
+          <td class="px-4 py-2 text-right text-gray-800">
+            <%= totals.totalRevenueTMT.toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
+          </td>
+          <td class="px-4 py-2 text-right text-gray-800">
+            <%= totals.totalRevenueUSD.toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
+          </td>
+        </tr>
+        <% totals.revenue.forEach(item => { %>
+        <tr class="hover:bg-gray-50 cursor-pointer"
+            onclick="window.location.href='/construction/income/revenue-details?category=<%= encodeURIComponent(item.NAME) %>&clientCode=<%= clientCode %>&month=<%= filterMonth || '' %>&year=<%= filterYear || '' %>'">
+          <td class="px-6 py-2 text-gray-700"><%= item.NAME %></td>
+          <td class="px-4 py-2 text-right text-gray-700">
+            <%= item.LINENET.toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
+          </td>
+          <td class="px-4 py-2 text-right text-gray-700">
+            <%= item.REPORTNET.toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
+          </td>
+        </tr>
+        <% }) %>
+        <!-- Expense -->
+        <tr class="bg-red-50 font-semibold cursor-pointer">
+          <td class="px-4 py-2 text-gray-800 text-xl font-semibold">Cykdajy</td>
+          <td class="px-4 py-2 text-right text-gray-800">
+            <%= totals.totalExpenseTMT.toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
+          </td>
+          <td class="px-4 py-2 text-right text-gray-800">
+            <%= totals.totalExpenseUSD.toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
+          </td>
+        </tr>
+        <% totals.expense.forEach(item => { %>
+        <tr class="hover:bg-gray-50 cursor-pointer"
+            onclick="window.location.href='/construction/income/expense-details?category=<%= encodeURIComponent(item.NAME) %>&clientCode=<%= clientCode || '120.05.001' %>&month=<%= filterMonth || '' %>&year=<%= filterYear || '' %>'">
+          <td class="px-6 py-2 text-gray-700"><%= item.NAME %></td>
+          <td class="px-4 py-2 text-right text-gray-700">
+            <%= item.LINENET.toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
+          </td>
+          <td class="px-4 py-2 text-right text-gray-700">
+            <%= item.REPORTNET.toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
+          </td>
+        </tr>
+        <% }) %>
+        <!-- Profit -->
+        <tr class="bg-green-100 font-semibold">
+          <td class="px-4 py-2 text-gray-800 text-xl font-semibold">Peyda</td>
+          <td class="px-4 py-2 text-right text-gray-800">
+            <%= totals.totalProfitTMT.toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
+          </td>
+          <td class="px-4 py-2 text-right text-gray-800">
+            <%= totals.totalProfitUSD.toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Filter Sidebar -->
+  <div class="w-96 bg-white shadow-md rounded-xl p-6 sticky top-10 h-fit self-start">
+    <h3 class="text-lg font-semibold text-gray-700 mb-4">Filters</h3>
+
+    <!-- Client -->
+    <div class="mb-6">
+      <label class="block mb-2 text-gray-600 font-medium">Client</label>
+      <select id="clientSelect" class="w-full bg-white border border-gray-300 rounded px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        <% totals.allClients.forEach(client => { %>
+          <option value="<%= client.CODE %>" <%= clientCode == client.CODE ? 'selected' : '' %>><%= client.DEFINITION_ %></option>
+        <% }) %>
+      </select>
+    </div>
+
+    <!-- Month & Year Row -->
+    <div class="flex gap-4 mb-4">
+      <!-- Month -->
+      <div class="flex-1">
+        <label class="block mb-2 text-gray-600 font-medium">Month</label>
+        <div id="filterMonth" class="multi-select-dropdown">
+          <div class="multi-select-label" onclick="toggleDropdown('filterMonth')">
+            <span id="filterMonth-label-text">Select months...</span>
+          </div>
+          <div class="multi-select-dropdown-content">
+            <% for(let m=1; m<=12; m++) { %>
+            <label data-value="<%= m %>" onclick="toggleOption('filterMonth','<%= m %>', event)">
+              <span><%= m %></span>
+              <span class="checkmark"></span>
+            </label>
+            <% } %>
           </div>
         </div>
+        <input type="hidden" id="filterMonth-values" value='<%= filterMonth ? JSON.stringify(filterMonth.split(",")) : "[]" %>'>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="min-w-full border border-gray-300 rounded-lg">
-          <thead class="bg-gray-100">
-            <tr>
-              <th class="px-4 py-2 text-left text-gray-700 font-bold"></th>
-              <th class="px-4 py-2 text-right text-gray-700 font-bold pe-12">
-                TMT
-              </th>
-              <th class="px-4 py-2 text-right text-gray-700 font-bold pe-12">
-                USD
-              </th>
-            </tr>
-          </thead>
-
-          <tbody class="divide-y divide-gray-200">
-            <!-- Revenue Group -->
-            <tr class="bg-blue-50 font-semibold cursor-pointer">
-              <td class="px-4 py-2 text-gray-800 text-xl font-semibold">
-                Girdeji
-              </td>
-              <td class="px-4 py-2 text-right text-gray-800">
-                <%= totals.totalRevenueTMT.toLocaleString('en-US', {
-                maximumFractionDigits: 2 }) %>
-              </td>
-              <td class="px-4 py-2 text-right text-gray-800">
-                <%= totals.totalRevenueUSD.toLocaleString('en-US', {
-                maximumFractionDigits: 2 }) %>
-              </td>
-            </tr>
-            
-            <% totals.revenue.forEach(item => { %>
-            <tr
-              class="hover:bg-gray-50 cursor-pointer"
-              onclick="window.location.href='/construction/income/revenue-details?category=<%= encodeURIComponent(item.NAME) %>&clientCode=<%= clientCode %>'"
-            >
-              <td class="px-6 py-2 text-gray-700"><%= item.NAME %></td>
-              <td class="px-4 py-2 text-right text-gray-700">
-                <%= item.LINENET.toLocaleString('en-US', {
-                maximumFractionDigits: 2 }) %>
-              </td>
-              <td class="px-4 py-2 text-right text-gray-700">
-                <%= item.REPORTNET.toLocaleString('en-US', {
-                maximumFractionDigits: 2 }) %>
-              </td>
-            </tr>
-            <% }) %>
-
-            <!-- Expense Group -->
-            <tr class="bg-red-50 font-semibold cursor-pointer">
-              <td class="px-4 py-2 text-gray-800 text-xl font-semibold">
-                Cykdajy
-              </td>
-              <td class="px-4 py-2 text-right text-gray-800">
-                <%= totals.totalExpenseTMT.toLocaleString('en-US', {
-                maximumFractionDigits: 2 }) %>
-              </td>
-              <td class="px-4 py-2 text-right text-gray-800">
-                <%= totals.totalExpenseUSD.toLocaleString('en-US', {
-                maximumFractionDigits: 2 }) %>
-              </td>
-            </tr>
-
-            <% totals.expense.forEach(item => { %>
-            <tr
-              class="hover:bg-gray-50 cursor-pointer"
-              onclick="window.location.href='/construction/income/expense-details?category=<%= encodeURIComponent(item.NAME) %>&clientCode=<%= clientCode || '120.05.001' %>'"
-            >
-              <td class="px-6 py-2 text-gray-700"><%= item.NAME %></td>
-              <td class="px-4 py-2 text-right text-gray-700">
-                <%= item.LINENET.toLocaleString('en-US', {
-                maximumFractionDigits: 2 }) %>
-              </td>
-              <td class="px-4 py-2 text-right text-gray-700">
-                <%= item.REPORTNET.toLocaleString('en-US', {
-                maximumFractionDigits: 2 }) %>
-              </td>
-            </tr>
-            <% }) %>
-
-            <!-- Profit Group -->
-            <tr class="bg-green-100 font-semibold">
-              <td class="px-4 py-2 text-gray-800 text-xl font-semibold">
-                Peyda
-              </td>
-              <td class="px-4 py-2 text-right text-gray-800">
-                <%= totals.totalProfitTMT.toLocaleString('en-US', {
-                maximumFractionDigits: 2 }) %>
-              </td>
-              <td class="px-4 py-2 text-right text-gray-800">
-                <%= totals.totalProfitUSD.toLocaleString('en-US', {
-                maximumFractionDigits: 2 }) %>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- Year -->
+      <div class="flex-1">
+        <label class="block mb-2 text-gray-600 font-medium">Year</label>
+        <div id="filterYear" class="multi-select-dropdown">
+          <div class="multi-select-label" onclick="toggleDropdown('filterYear')">
+            <span id="filterYear-label-text">Select years...</span>
+          </div>
+          <div class="multi-select-dropdown-content">
+            <% const currentYear = new Date().getFullYear(); %>
+            <% for(let y=currentYear; y>=currentYear-5; y--) { %>
+            <label data-value="<%= y %>" onclick="toggleOption('filterYear','<%= y %>', event)">
+              <span><%= y %></span>
+              <span class="checkmark"></span>
+            </label>
+            <% } %>
+          </div>
+        </div>
+        <input type="hidden" id="filterYear-values" value='<%= filterYear ? JSON.stringify(filterYear.split(",")) : "[]" %>'>
       </div>
     </div>
-  </body>
+
+    <!-- Start & End Date -->
+    <div class="flex gap-4 mb-4">
+      <div class="flex-1">
+        <label class="block mb-2 text-gray-600 font-medium">Start Date</label>
+        <input type="date" id="startDate" class="w-full border border-gray-300 rounded px-3 py-2" value="<%= startDate || '' %>">
+      </div>
+      <div class="flex-1">
+        <label class="block mb-2 text-gray-600 font-medium">End Date</label>
+        <input type="date" id="endDate" class="w-full border border-gray-300 rounded px-3 py-2" value="<%= endDate || '' %>">
+      </div>
+    </div>
+
+    <div class="flex gap-2 mb-4">
+      <button onclick="clearFilter('filterMonth')" class="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded hover:bg-gray-300 transition-all">Clear Months</button>
+      <button onclick="clearFilter('filterYear')" class="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded hover:bg-gray-300 transition-all">Clear Years</button>
+    </div>
+
+    <button onclick="handleFilters()" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-all">Apply Filters</button>
+  </div>
+</div>
+
+<script>
+  renderDropdownLabel('filterMonth');
+  renderDropdownLabel('filterYear');
+</script>
+</body>
 </html>
